@@ -82,10 +82,22 @@ try {
     { timeout: 5000 }
   )
 
+  await page.waitForFunction(
+    (faqId) => {
+      const target = globalThis.document.querySelector(
+        `[data-faq-question-id="${faqId}"]`
+      )
+      const targetTop = Math.round(target?.getBoundingClientRect().top ?? -1)
+
+      return targetTop >= 80 && targetTop <= 140
+    },
+    firstFaqId,
+    { timeout: 5000 }
+  )
+
   const targetTop = await page
     .locator(`[data-faq-question-id="${firstFaqId}"]`)
     .evaluate((element) => Math.round(element.getBoundingClientRect().top))
-
   assert.equal(
     targetTop >= 80 && targetTop <= 140,
     true,

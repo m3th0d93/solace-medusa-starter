@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Accordion,
   AccordionContent,
@@ -10,7 +12,7 @@ import { Text } from '@modules/common/components/text'
 import { MinusThinIcon, PlusIcon } from '@modules/common/icons'
 import { FAQSection } from 'types/strapi'
 
-type FAQQuestionBookmark = {
+export type FAQQuestionBookmark = {
   id: string
   label: string
 }
@@ -18,31 +20,34 @@ type FAQQuestionBookmark = {
 export const FAQAccordion = ({
   data,
   questionBookmarks = [],
+  openQuestionId,
+  onOpenQuestionIdChange,
 }: {
   data: FAQSection
   questionBookmarks?: FAQQuestionBookmark[]
+  openQuestionId?: string
+  onOpenQuestionIdChange?: (id?: string) => void
 }) => {
   return (
     <Box id={data.Bookmark}>
-      <Heading
-        as="h2"
-        className="mb-4 text-xl text-basic-primary small:mb-6 small:text-3xl"
-      >
-        {data.Title}
-      </Heading>
       <Accordion
         type="single"
         collapsible
         className="flex w-full flex-col gap-2"
+        value={onOpenQuestionIdChange ? (openQuestionId ?? '') : undefined}
+        onValueChange={(value) => {
+          onOpenQuestionIdChange?.(value || undefined)
+        }}
       >
         {data.Question.map((item, id) => {
           const questionBookmark = questionBookmarks[id]
+          const questionValue = questionBookmark?.id ?? `item-${id}`
 
           return (
             <AccordionItem
               id={questionBookmark?.id}
               data-faq-question-id={questionBookmark?.id}
-              value={`item-${id}`}
+              value={questionValue}
               key={id}
               className="scroll-mt-24 bg-primary px-5 pb-3 pt-5"
             >

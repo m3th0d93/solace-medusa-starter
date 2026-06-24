@@ -14,9 +14,13 @@ import { ChevronDownIcon } from '@modules/common/icons'
 
 type SidebarBookmarksProps = {
   data: { id: string; label: string }[]
+  onBookmarkSelect?: (id: string) => void
 }
 
-const SidebarBookmarks = ({ data }: SidebarBookmarksProps) => {
+const SidebarBookmarks = ({
+  data,
+  onBookmarkSelect,
+}: SidebarBookmarksProps) => {
   const [isOpen, setIsOpen] = useState(true)
   const [activeSection, setActiveSection] = useState(data[0]?.id ?? '')
 
@@ -75,14 +79,19 @@ const SidebarBookmarks = ({ data }: SidebarBookmarksProps) => {
                   key={section.id}
                   data-bookmark-id={section.id}
                   onClick={() => {
-                    scrollToSection(section.id)
+                    if (onBookmarkSelect) {
+                      onBookmarkSelect(section.id)
+                    } else {
+                      scrollToSection(section.id)
+                    }
                     setActiveSection(section.id)
                   }}
                   className={cn(
-                    'w-fit cursor-pointer py-2 text-left text-lg transition-colors duration-500',
+                    'w-fit cursor-pointer py-2 text-left text-lg no-underline transition-colors duration-500 hover:text-action-primary-hover hover:no-underline focus-visible:no-underline',
                     {
-                      'border-b border-action-primary':
+                      'font-medium text-action-primary':
                         activeSection === section.id,
+                      'text-basic-primary': activeSection !== section.id,
                     }
                   )}
                 >

@@ -1,0 +1,39 @@
+services:
+  storefront:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    env_file:
+      - .env.local
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - npm_cache:/root/.npm
+    command: sh -lc "npm ci && npm run dev -- -H 0.0.0.0"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - cms-stub
+    networks:
+      - medusa_backend
+    restart: unless-stopped
+
+  cms-stub:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    volumes:
+      - ./deploy/cms-stub.mjs:/app/cms-stub.mjs:ro
+    command: node /app/cms-stub.mjs
+    expose:
+      - "1337"
+    networks:
+      - medusa_backend
+    restart: unless-stopped
+
+networks:
+  medusa_backend:
+    external: true
+    name: backend_default
+
+volumes:
+  node_modules:
+  npm_cache:

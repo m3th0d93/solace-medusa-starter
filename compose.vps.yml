@@ -8,11 +8,15 @@ services:
       - .:/app
       - node_modules:/app/node_modules
       - npm_cache:/root/.npm
-    command: sh -lc "npm ci && npm run dev -- -H 0.0.0.0"
+    command: >
+      sh -lc "npm ci &&
+      npm run build &&
+      npx next start -p 8000 -H 0.0.0.0"
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
-      - cms-stub
+      cms-stub:
+        condition: service_healthy
     networks:
       - medusa_backend
     restart: unless-stopped
@@ -25,6 +29,15 @@ services:
     command: node /app/cms-stub.mjs
     expose:
       - "1337"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:1337/api/homepage').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - medusa_backend
     restart: unless-stopped

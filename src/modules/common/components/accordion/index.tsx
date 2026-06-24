@@ -1,3 +1,5 @@
+'use client'
+
 import { ElementRef, forwardRef } from 'react'
 
 import { cn } from '@lib/util/cn'

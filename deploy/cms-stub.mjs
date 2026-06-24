@@ -1,16 +1,34 @@
 import http from "node:http";
 
+const emptyPagination = {
+  pagination: {
+    page: 1,
+    pageSize: 1000,
+    pageCount: 0,
+    total: 0,
+  },
+};
+
 const emptyList = { data: [] };
+const emptyPaginatedList = { data: [], meta: emptyPagination };
 const emptyPage = { data: {} };
+const emptyContentPage = {
+  data: {
+    PageContent: "## Content pending\n\nThis staging page is awaiting CMS content.",
+  },
+};
+const emptyFaq = { data: { FAQSection: [] } };
 
 const responses = [
   [/^\/api\/homepage\b/, emptyPage],
   [/^\/api\/collections\b/, emptyList],
-  [/^\/api\/blogs\b/, emptyList],
-  [/^\/api\/blog-post-categories\b/, emptyList],
+  [/^\/api\/blogs\b/, emptyPaginatedList],
+  [/^\/api\/blog-post-categories\b/, emptyPaginatedList],
   [/^\/api\/product-variants-colors\b/, emptyList],
   [/^\/api\/about-us\b/, emptyPage],
-  [/^\/api\/faq\b/, emptyPage],
+  [/^\/api\/faq\b/, emptyFaq],
+  [/^\/api\/privacy-policy\b/, emptyContentPage],
+  [/^\/api\/terms-and-condition\b/, emptyContentPage],
 ];
 
 const server = http.createServer((req, res) => {

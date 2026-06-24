@@ -69,7 +69,12 @@ export default [
   },
   // Node.js config files
   {
-    files: ['**/*.config.js', '**/*.config.mjs', 'check-env-variables.js'],
+    files: [
+      '**/*.config.js',
+      '**/*.config.mjs',
+      'check-env-variables.js',
+      'deploy/**/*.mjs',
+    ],
     languageOptions: {
       globals: {
         ...globals.node,

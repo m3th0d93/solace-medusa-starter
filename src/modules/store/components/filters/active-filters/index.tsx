@@ -27,7 +27,6 @@ export default function ActiveProductFilters({
   currentCategory,
   currentCollection,
   currentQuery,
-  countryCode,
 }: ActiveProductFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -78,12 +77,12 @@ export default function ActiveProductFilters({
     }
 
     const basePath = currentQuery
-      ? `/${countryCode}/results/${currentQuery}`
+      ? `/results/${currentQuery}`
       : currentCategory
-        ? `/${countryCode}/categories/${currentCategory.handle}`
+        ? `/categories/${currentCategory.handle}`
         : currentCollection
-          ? `/${countryCode}/collections/${currentCollection.handle}`
-          : `/${countryCode}/shop`
+          ? `/collections/${currentCollection.handle}`
+          : `/shop`
 
     router.push(
       params.toString() ? `${basePath}?${params.toString()}` : `${basePath}`

@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useMemo } from 'react'
 import { useParams, usePathname } from 'next/navigation'
 
 import { Listbox, Transition } from '@headlessui/react'
@@ -21,13 +21,8 @@ type CountrySelectProps = {
 }
 
 const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
-  const [current, setCurrent] = useState<
-    | { country: string | undefined; region: string; label: string | undefined }
-    | undefined
-  >(undefined)
-
   const { countryCode } = useParams()
-  const currentPath = usePathname().split(`/${countryCode}`)[1]
+  const currentPath = usePathname()
 
   const { state, close } = toggleState
 
@@ -44,11 +39,10 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
       .sort((a, b) => (a?.label ?? '').localeCompare(b?.label ?? ''))
   }, [regions])
 
-  useEffect(() => {
-    if (countryCode) {
-      const option = options?.find((o) => o?.country === countryCode)
-      setCurrent(option)
-    }
+  const current = useMemo(() => {
+    return countryCode
+      ? options?.find((o) => o?.country === countryCode)
+      : undefined
   }, [options, countryCode])
 
   const handleChange = (option: CountryOption) => {

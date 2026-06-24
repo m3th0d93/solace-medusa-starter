@@ -2,6 +2,7 @@ import { createFooterNavigation } from '@lib/constants'
 import { getCategoriesList } from '@lib/data/categories'
 import { cn } from '@lib/util/cn'
 import { formatNameForTestId } from '@lib/util/formatNameForTestId'
+import { toPublicPath } from '@lib/util/public-url'
 import {
   Accordion,
   AccordionContent,
@@ -45,7 +46,7 @@ function SocialMedia({ className }: { className?: string }) {
   )
 }
 
-export default async function Footer({ countryCode }: { countryCode: string }) {
+export default async function Footer(_props: { countryCode: string }) {
   const { product_categories } = await getCategoriesList()
   const footerNavigation = createFooterNavigation(product_categories)
 
@@ -81,7 +82,7 @@ export default async function Footer({ countryCode }: { countryCode: string }) {
                   {item.links.map((link, linkId) => {
                     return (
                       <NavigationItem
-                        href={`/${countryCode}${link.href}`}
+                        href={toPublicPath(link.href)}
                         key={`${id}-navigationItem-${linkId}`}
                         variant="secondary"
                         className="w-max hover:text-static"

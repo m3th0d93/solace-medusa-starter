@@ -8,7 +8,6 @@ import { Box } from '@modules/common/components/box'
 import { Input } from '@modules/common/components/input'
 
 export const ControlledSearchBox = ({
-  countryCode,
   open,
   closeSearch,
 }: {
@@ -33,7 +32,7 @@ export const ControlledSearchBox = ({
         'recentSearches',
         JSON.stringify(Array.from(updatedSearches).slice(0, 5))
       )
-      router.push(`/${countryCode}/results/${query}`)
+      router.push(`/results/${query}`)
     }
     inputRef.current.blur()
     setQuery('')

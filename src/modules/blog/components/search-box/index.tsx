@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Input } from '@modules/common/components/input'
 
-export default function SearchBox({ countryCode }: { countryCode: string }) {
-  const [query, setQuery] = useState('')
+export default function SearchBox(_props: { countryCode: string }) {
   const inputRef = useRef(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -20,17 +20,10 @@ export default function SearchBox({ countryCode }: { countryCode: string }) {
       } else {
         currentUrl.searchParams.set('q', query.trim())
       }
-      const newPath = `/${countryCode}/blog${currentUrl.search}`
+      const newPath = `/blog${currentUrl.search}`
       router.push(newPath)
     }
   }
-
-  useEffect(() => {
-    const q = searchParams.get('q')
-    if (q) {
-      setQuery(q)
-    }
-  }, [searchParams])
 
   return (
     <Input

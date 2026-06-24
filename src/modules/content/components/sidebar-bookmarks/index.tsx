@@ -18,9 +18,13 @@ type SidebarBookmarksProps = {
 
 const SidebarBookmarks = ({ data }: SidebarBookmarksProps) => {
   const [isOpen, setIsOpen] = useState(true)
-  const [activeSection, setActiveSection] = useState(data[0].id)
+  const [activeSection, setActiveSection] = useState(data[0]?.id ?? '')
 
   useEffect(() => {
+    if (!data.length) {
+      return
+    }
+
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 96
 
@@ -40,6 +44,10 @@ const SidebarBookmarks = ({ data }: SidebarBookmarksProps) => {
       window.removeEventListener('scroll', handleScroll)
     }
   }, [data])
+
+  if (!data.length) {
+    return null
+  }
 
   return (
     <div className="sticky top-24 w-full bg-primary">

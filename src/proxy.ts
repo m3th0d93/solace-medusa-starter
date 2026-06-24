@@ -5,7 +5,26 @@ import { HttpTypes } from '@medusajs/types'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || 'us'
+const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || 'gb'
+
+const PUBLIC_ROUTE_PREFIXES = new Set([
+  '',
+  'about-us',
+  'account',
+  'blog',
+  'cart',
+  'categories',
+  'checkout',
+  'collections',
+  'faq',
+  'order',
+  'privacy-policy',
+  'products',
+  'reset-password',
+  'results',
+  'shop',
+  'terms-and-conditions',
+])
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
@@ -91,42 +110,53 @@ export async function proxy(request: NextRequest) {
   const checkoutStep = searchParams.get('step')
   const onboardingCookie = request.cookies.get('_medusa_onboarding')
   const cartIdCookie = request.cookies.get('_medusa_cart_id')
+  const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
+  const firstPathSegment = pathSegments[0]?.toLowerCase() ?? ''
 
   const regionMap = await getRegionMap()
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))
-
   const urlHasCountryCode =
-    countryCode && request.nextUrl.pathname.split('/')[1].includes(countryCode)
+    firstPathSegment !== '' && regionMap.has(firstPathSegment)
+  const cleanPath =
+    urlHasCountryCode && pathSegments.length > 1
+      ? `/${pathSegments.slice(1).join('/')}`
+      : '/'
 
-  // check if one of the country codes is in the url
+  if (!urlHasCountryCode && !PUBLIC_ROUTE_PREFIXES.has(firstPathSegment)) {
+    return new NextResponse(null, { status: 404 })
+  }
+
+  let response: NextResponse
+
+  if (urlHasCountryCode) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = cleanPath
+    response = NextResponse.redirect(redirectUrl, 308)
+  } else if (countryCode) {
+    const rewriteUrl = request.nextUrl.clone()
+    rewriteUrl.pathname = `/${countryCode}${
+      request.nextUrl.pathname === '/' ? '' : request.nextUrl.pathname
+    }`
+    response = NextResponse.rewrite(rewriteUrl)
+  } else {
+    response = NextResponse.next()
+  }
+
   if (
-    urlHasCountryCode &&
+    !urlHasCountryCode &&
     (!isOnboarding || onboardingCookie) &&
     (!cartId || cartIdCookie)
   ) {
-    return NextResponse.next()
-  }
-
-  const redirectPath =
-    request.nextUrl.pathname === '/' ? '' : request.nextUrl.pathname
-
-  const queryString = request.nextUrl.search ? request.nextUrl.search : ''
-
-  let redirectUrl = request.nextUrl.href
-
-  let response = NextResponse.redirect(redirectUrl, 307)
-
-  // If no country code is set, we redirect to the relevant region.
-  if (!urlHasCountryCode && countryCode) {
-    redirectUrl = `${request.nextUrl.origin}/${countryCode}${redirectPath}${queryString}`
-    response = NextResponse.redirect(`${redirectUrl}`, 307)
+    return response
   }
 
   // If a cart_id is in the params, we set it as a cookie and redirect to the address step.
   if (cartId && !checkoutStep) {
-    redirectUrl = `${redirectUrl}&step=address`
-    response = NextResponse.redirect(`${redirectUrl}`, 307)
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = cleanPath
+    redirectUrl.searchParams.set('step', 'address')
+    response = NextResponse.redirect(redirectUrl, 307)
     response.cookies.set('_medusa_cart_id', cartId, { maxAge: 60 * 60 * 24 })
   }
 
@@ -141,5 +171,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|favicon.ico).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 }

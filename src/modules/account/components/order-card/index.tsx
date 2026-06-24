@@ -13,7 +13,6 @@ export default async function OrderCard({
 }: {
   order: HttpTypes.StoreOrder & { status: string }
 }) {
-  const countryCode = order.shipping_address?.country_code
   const orderStatus = getOrderStatus(order.status)
 
   return (
@@ -57,7 +56,7 @@ export default async function OrderCard({
             <Thumbnail
               key={index}
               thumbnail={item.thumbnail}
-              href={`/${countryCode}/products/${item.product_handle}`}
+              href={`/products/${item.product_handle}`}
               size="big"
               className="xl:hidden"
             />
@@ -66,14 +65,14 @@ export default async function OrderCard({
             <Thumbnail
               key={index}
               thumbnail={item.thumbnail}
-              href={`/${countryCode}/products/${item.product_handle}`}
+              href={`/products/${item.product_handle}`}
               className="hidden xl:block"
             />
           ))}
           {order.items.length > 2 && (
             <Thumbnail
               more={`+${order.items.length - 2}`}
-              href={`/${countryCode}/account/orders/details/${order.id}`}
+              href={`/account/orders/details/${order.id}`}
               size="big"
               className="xl:hidden"
             />
@@ -81,7 +80,7 @@ export default async function OrderCard({
           {order.items.length > 5 && (
             <Thumbnail
               more={`+${order.items.length - 5}`}
-              href={`/${countryCode}/account/orders/details/${order.id}`}
+              href={`/account/orders/details/${order.id}`}
               className="hidden xl:block"
             />
           )}

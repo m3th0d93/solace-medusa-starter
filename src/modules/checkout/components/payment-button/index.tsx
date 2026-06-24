@@ -178,15 +178,13 @@ const StripePaymentButton = ({
         })
     } else {
       // TODO: Adjust for another Stripe methods
-      const countryCode = cart.shipping_address?.country_code
-
       await stripe
         .confirmPayment({
           clientSecret,
           elements,
           redirect: 'if_required',
           confirmParams: {
-            return_url: `${window.location.origin}/${countryCode}/order/confirmed/${cart.id}`,
+            return_url: `${window.location.origin}/order/confirmed/${cart.id}`,
           },
         })
         .then(async ({ error }) => {

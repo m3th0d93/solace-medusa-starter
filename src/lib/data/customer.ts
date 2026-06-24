@@ -148,12 +148,12 @@ export async function login(_currentState: unknown, formData: FormData) {
   }
 }
 
-export async function signout(countryCode: string) {
+export async function signout(_countryCode: string) {
   await sdk.auth.logout()
   await removeAuthToken()
   revalidateTag('auth', 'max')
   revalidateTag('customer', 'max')
-  redirect(`/${countryCode}/account`)
+  redirect('/account')
 }
 
 export const addCustomerAddress = async (
@@ -176,7 +176,8 @@ export const addCustomerAddress = async (
     address_name:
       (formData.get('address_name') as string) ?? 'shipping_address',
     is_default_shipping:
-      formData.get('is_default_shipping') === 'on' || 'true' ? true : false,
+      formData.get('is_default_shipping') === 'on' ||
+      formData.get('is_default_shipping') === 'true',
   }
 
   const authHeaders = await getAuthHeaders()
@@ -227,7 +228,8 @@ export const updateCustomerAddress = async (
     country_code: formData.get('country_code') as string,
     phone: formData.get('phone') as string,
     is_default_shipping:
-      formData.get('is_default_shipping') === 'on' || 'true' ? true : false,
+      formData.get('is_default_shipping') === 'on' ||
+      formData.get('is_default_shipping') === 'true',
   }
 
   const authHeaders = await getAuthHeaders()

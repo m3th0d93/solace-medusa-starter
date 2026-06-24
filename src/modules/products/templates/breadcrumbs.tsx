@@ -13,7 +13,6 @@ import { ArrowLeftIcon } from '@modules/common/icons'
 
 export default function ProductBreadcrumbs({
   product,
-  countryCode,
 }: {
   product: StoreProduct
   countryCode: string
@@ -29,9 +28,7 @@ export default function ProductBreadcrumbs({
             <Fragment key={category.id}>
               <BreadcrumbsSeparator />
               <BreadcrumbsItem key={category.id}>
-                <BreadcrumbsLink
-                  href={`/${countryCode}/categories/${category.handle}`}
-                >
+                <BreadcrumbsLink href={`/categories/${category.handle}`}>
                   {category.name}
                 </BreadcrumbsLink>
               </BreadcrumbsItem>
@@ -46,7 +43,7 @@ export default function ProductBreadcrumbs({
           <BreadcrumbsItem>
             {product?.categories?.length > 0 && (
               <BreadcrumbsLink
-                href={`/${countryCode}/categories/${product.categories[product.categories.length - 1].handle}`}
+                href={`/categories/${product.categories[product.categories.length - 1].handle}`}
                 className="flex items-center gap-2 text-md"
               >
                 <ArrowLeftIcon className="h-[18px] w-[18px]" />

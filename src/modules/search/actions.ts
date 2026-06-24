@@ -1,7 +1,7 @@
 import { safeDecodeURIComponent } from '@lib/util/safe-decode-uri'
 import { sdk } from '@lib/config'
 import { HttpTypes } from '@medusajs/types'
-import { SearchedProducts } from 'types/global'
+import { SearchedProduct, SearchedProducts } from 'types/global'
 
 export const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
 export const PUBLISHABLE_API_KEY =
@@ -21,6 +21,13 @@ type SearchParams = {
   price?: string[]
   query?: string
 }
+
+type MedusaProductSearchParams = HttpTypes.FindParams &
+  HttpTypes.StoreProductParams & {
+    category_id?: string[]
+    collection_id?: string[]
+    q?: string
+  }
 
 export async function search({
   currency_code,
@@ -126,7 +133,7 @@ export async function search({
     // Fall back to Medusa's core Store API below.
   }
 
-  const queryParams: HttpTypes.FindParams & HttpTypes.StoreProductParams = {
+  const queryParams: MedusaProductSearchParams = {
     limit: PRODUCT_LIMIT,
     offset: (pageNumber - 1) * PRODUCT_LIMIT,
     region_id,
@@ -155,7 +162,11 @@ export async function search({
   })
 
   return {
-    results: products,
+    results: products.map((product) => ({
+      ...product,
+      sale_price: '',
+      regular_price: '',
+    })) as SearchedProduct[],
     count: count ?? products.length,
   }
 }

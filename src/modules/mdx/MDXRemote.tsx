@@ -1,31 +1,26 @@
-'use client'
-
-import React from 'react'
-
-import { MDXProvider } from '@mdx-js/react'
-import { MDXRemote as MDX } from 'next-mdx-remote'
+import { MDXRemote as RemoteMdx } from 'next-mdx-remote/rsc'
+import rehypeHighlight from 'rehype-highlight'
+import rehypeSlug from 'rehype-slug'
+import remarkGfm from 'remark-gfm'
+import remarkUnwrapImages from 'remark-unwrap-images'
 
 import { mdxComponents } from './MDXComponents'
 
-interface Heading {
-  title: string
-  id: string
+type MDXRemoteProps = {
+  source: string
 }
 
-interface MDXRemoteProps {
-  source: {
-    frontmatter: {
-      headings?: Heading[]
-    }
-    compiledSource: string
-    scope: Record<string, unknown>
-  }
-}
-
-export function MDXRemote({ source }: MDXRemoteProps) {
+export async function MDXRemote({ source }: MDXRemoteProps) {
   return (
-    <MDXProvider>
-      <MDX {...source} components={mdxComponents} />
-    </MDXProvider>
+    <RemoteMdx
+      source={source}
+      components={mdxComponents}
+      options={{
+        mdxOptions: {
+          remarkPlugins: [remarkUnwrapImages, remarkGfm],
+          rehypePlugins: [rehypeHighlight, rehypeSlug],
+        },
+      }}
+    />
   )
 }

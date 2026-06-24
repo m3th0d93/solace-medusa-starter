@@ -41,7 +41,7 @@ export default async function TermsAndConditionsPage() {
             <SidebarBookmarks data={bookmarks} />
           </Box>
           <Box className="col-span-12 space-y-10 medium:col-span-8 medium:col-start-5">
-            <MDXRemote source={mdxSource} />
+            <MDXRemote source={PageContent} />
           </Box>
         </Box>
       </Container>

@@ -5,8 +5,8 @@ import { serializeMdx } from '@lib/util/serializeMdx'
 import { Box } from '@modules/common/components/box'
 import { Container } from '@modules/common/components/container'
 import { Heading } from '@modules/common/components/heading'
+import { ContentPageBody } from '@modules/content/components/content-page-body'
 import SidebarBookmarks from '@modules/content/components/sidebar-bookmarks'
-import { MDXRemote } from '@modules/mdx/MDXRemote'
 import StoreBreadcrumbs from '@modules/store/templates/breadcrumbs'
 
 export const metadata: Metadata = {
@@ -41,7 +41,7 @@ export default async function PrivacyPolicyPage() {
             <SidebarBookmarks data={bookmarks} />
           </Box>
           <Box className="col-span-12 -mt-6 space-y-10 small:-mt-12 medium:col-span-8 medium:col-start-5">
-            <MDXRemote source={PageContent} />
+            <ContentPageBody content={PageContent} />
           </Box>
         </Box>
       </Container>

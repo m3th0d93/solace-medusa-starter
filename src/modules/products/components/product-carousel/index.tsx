@@ -28,16 +28,28 @@ export function ProductCarousel({
   viewAll,
   testId,
 }: ProductCarouselProps) {
+  const pricedProducts = products.flatMap((item) => {
+    const cheapestVariant = getProductPrice({
+      product: item,
+    })
+
+    if (!cheapestVariant.cheapestPrice) {
+      return []
+    }
+
+    return [{ item, cheapestVariant }]
+  })
+
+  if (!pricedProducts.length) {
+    return null
+  }
+
   return (
     <Container className="overflow-hidden" data-testid={testId}>
       <Box className="flex flex-col gap-6 small:gap-12">
-        <CarouselWrapper title={title} productsCount={products.length}>
+        <CarouselWrapper title={title} productsCount={pricedProducts.length}>
           <Box className="flex gap-2">
-            {products.map((item, index) => {
-              const cheapestVariant = getProductPrice({
-                product: item,
-              })
-
+            {pricedProducts.map(({ item, cheapestVariant }, index) => {
               return (
                 <Box
                   className="flex-[0_0_calc(72.666%-8px)] small:flex-[0_0_calc(62.666%-8px)] medium:flex-[0_0_calc(42.666%-8px)] xl:flex-[0_0_calc(33.333%-8px)] 2xl:flex-[0_0_calc(30.333%-8px)]"

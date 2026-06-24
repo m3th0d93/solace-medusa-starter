@@ -73,6 +73,7 @@ const SidebarBookmarks = ({ data }: SidebarBookmarksProps) => {
               {data.map((section) => (
                 <button
                   key={section.id}
+                  data-bookmark-id={section.id}
                   onClick={() => {
                     scrollToSection(section.id)
                     setActiveSection(section.id)

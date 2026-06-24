@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 
 import { getFAQ } from '@lib/data/fetch'
+import { createAnchorId } from '@lib/util/anchor-id'
 import { Box } from '@modules/common/components/box'
 import { Container } from '@modules/common/components/container'
 import { Heading } from '@modules/common/components/heading'
@@ -19,12 +20,24 @@ export default async function FAQPage() {
     data: { FAQSection },
   } = await getFAQ()
 
-  const bookmarks = FAQSection.map((section) => {
-    return {
-      id: section.Bookmark,
-      label: section.Title,
-    }
-  })
+  const usedBookmarkIds = new Map<string, number>()
+  const questionBookmarksBySection = FAQSection.map((section) =>
+    section.Question.map((question, questionIndex) => {
+      const baseId = createAnchorId(
+        'faq',
+        question.Title,
+        `question-${section.id}-${question.id ?? questionIndex}`
+      )
+      const currentCount = usedBookmarkIds.get(baseId) ?? 0
+      usedBookmarkIds.set(baseId, currentCount + 1)
+
+      return {
+        id: currentCount === 0 ? baseId : `${baseId}-${currentCount + 1}`,
+        label: question.Title,
+      }
+    })
+  )
+  const bookmarks = questionBookmarksBySection.flat()
 
   return (
     <Container className="min-h-screen max-w-full bg-secondary !p-0">
@@ -40,7 +53,11 @@ export default async function FAQPage() {
 
           <Box className="col-span-12 space-y-10 medium:col-span-8 medium:col-start-5">
             {FAQSection.map((section, id) => (
-              <FAQAccordion key={id} data={section} />
+              <FAQAccordion
+                key={id}
+                data={section}
+                questionBookmarks={questionBookmarksBySection[id]}
+              />
             ))}
           </Box>
         </Box>

@@ -73,11 +73,37 @@ async function assertAsset(path, expectedContentType) {
   )
 }
 
+async function assertFaqQuestionBookmark(questionId, questionText) {
+  const response = await request('/faq')
+  const body = await response.text()
+
+  assert.equal(response.status, 200, '/faq did not return 200')
+  assert.equal(
+    body.includes(`id="${questionId}"`),
+    true,
+    `/faq did not render question anchor id="${questionId}"`
+  )
+  assert.equal(
+    body.includes(`data-bookmark-id="${questionId}"`),
+    true,
+    `/faq sidebar did not render bookmark for ${questionId}`
+  )
+  assert.equal(
+    body.includes(questionText),
+    true,
+    `/faq did not include expected question text: ${questionText}`
+  )
+}
+
 await assertStatus('/', 200)
 await assertStatus('/faq', 200, 'How long does delivery take?')
 await assertStatus('/shop', 200, 'No products.')
 await assertStatus('/terms-and-conditions', 200, 'Content pending')
 await assertAsset('/fonts/webfont/WebfontRegular.woff2', 'font/woff2')
+await assertFaqQuestionBookmark(
+  'faq-how-long-does-delivery-take',
+  'How long does delivery take?'
+)
 
 await assertRedirect('/gb', '/')
 await assertRedirect('/gb/faq', '/faq')

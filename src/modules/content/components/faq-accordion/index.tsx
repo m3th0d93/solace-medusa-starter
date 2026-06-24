@@ -10,7 +10,18 @@ import { Text } from '@modules/common/components/text'
 import { MinusThinIcon, PlusIcon } from '@modules/common/icons'
 import { FAQSection } from 'types/strapi'
 
-export const FAQAccordion = ({ data }: { data: FAQSection }) => {
+type FAQQuestionBookmark = {
+  id: string
+  label: string
+}
+
+export const FAQAccordion = ({
+  data,
+  questionBookmarks = [],
+}: {
+  data: FAQSection
+  questionBookmarks?: FAQQuestionBookmark[]
+}) => {
   return (
     <Box id={data.Bookmark}>
       <Heading
@@ -25,11 +36,15 @@ export const FAQAccordion = ({ data }: { data: FAQSection }) => {
         className="flex w-full flex-col gap-2"
       >
         {data.Question.map((item, id) => {
+          const questionBookmark = questionBookmarks[id]
+
           return (
             <AccordionItem
+              id={questionBookmark?.id}
+              data-faq-question-id={questionBookmark?.id}
               value={`item-${id}`}
               key={id}
-              className="bg-primary px-5 pb-3 pt-5"
+              className="scroll-mt-24 bg-primary px-5 pb-3 pt-5"
             >
               <AccordionTrigger className="[&[data-state=closed]>#minusIconSvg]:hidden [&[data-state=open]>#plusIconSvg]:hidden">
                 <Heading

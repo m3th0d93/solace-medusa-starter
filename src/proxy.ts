@@ -26,6 +26,8 @@ const PUBLIC_ROUTE_PREFIXES = new Set([
   'terms-and-conditions',
 ])
 
+const STATIC_ROUTE_PREFIXES = new Set(['fonts'])
+
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
   regionMapUpdated: Date.now(),
@@ -113,6 +115,10 @@ export async function proxy(request: NextRequest) {
   const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
   const firstPathSegment = pathSegments[0]?.toLowerCase() ?? ''
 
+  if (STATIC_ROUTE_PREFIXES.has(firstPathSegment)) {
+    return NextResponse.next()
+  }
+
   const regionMap = await getRegionMap()
 
   const countryCode = regionMap && (await getCountryCode(request, regionMap))
@@ -171,5 +177,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|fonts|.*\\..*).*)'],
 }

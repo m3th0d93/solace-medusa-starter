@@ -2,9 +2,49 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+@font-face {
+  font-family: 'Webfont';
+  src: url('/fonts/webfont/WebfontLight.eot');
+  src:
+    url('/fonts/webfont/WebfontLight.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/webfont/WebfontLight.woff2') format('woff2'),
+    url('/fonts/webfont/WebfontLight.woff') format('woff'),
+    url('/fonts/webfont/WebfontLight.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Webfont';
+  src: url('/fonts/webfont/WebfontRegular.eot');
+  src:
+    url('/fonts/webfont/WebfontRegular.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/webfont/WebfontRegular.woff2') format('woff2'),
+    url('/fonts/webfont/WebfontRegular.woff') format('woff'),
+    url('/fonts/webfont/WebfontRegular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Webfont';
+  src: url('/fonts/webfont/WebfontMedium.eot');
+  src:
+    url('/fonts/webfont/WebfontMedium.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/webfont/WebfontMedium.woff2') format('woff2'),
+    url('/fonts/webfont/WebfontMedium.woff') format('woff'),
+    url('/fonts/webfont/WebfontMedium.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   body {
     @apply bg-primary;
+    font-family: 'Webfont', ui-sans-serif, system-ui, sans-serif;
     scroll-behavior: smooth;
   }
 }

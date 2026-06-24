@@ -19,7 +19,8 @@
     "analyze": "ANALYZE=true next build",
     "test-e2e": "playwright test e2e",
     "test:serial": "playwright test --workers=1",
-    "test:staging-routes": "node deploy/check-public-routes.mjs"
+    "test:staging-routes": "node deploy/check-public-routes.mjs",
+    "test:webfont": "node deploy/check-webfont-assets.mjs"
   },
   "resolutions": {
     "webpack": "5",

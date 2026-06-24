@@ -7,6 +7,12 @@ import { ProductFilters } from 'types/global'
 
 import { getRegion } from './regions'
 
+const emptyProductFilters: ProductFilters = {
+  collection: [],
+  type: [],
+  material: [],
+}
+
 export const getProductsById = async function ({
   ids,
   regionId,
@@ -158,17 +164,42 @@ export const getProductsListByCollectionId = async function ({
 }
 
 export const getStoreFilters = async function () {
-  const filters: ProductFilters = await fetch(
-    `${BACKEND_URL}/store/filter-product-attributes`,
-    {
-      headers: {
-        'x-publishable-api-key': PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-      },
-    }
-  ).then((res) => res.json())
+  try {
+    const response = await fetch(
+      `${BACKEND_URL}/store/filter-product-attributes`,
+      {
+        headers: {
+          'x-publishable-api-key': PUBLISHABLE_API_KEY!,
+        },
+        next: {
+          revalidate: 3600,
+        },
+      }
+    )
 
-  return filters
+    const contentType = response.headers.get('content-type') ?? ''
+
+    if (response.ok && contentType.includes('application/json')) {
+      return (await response.json()) as ProductFilters
+    }
+  } catch {
+    // Fall back to core Medusa data below.
+  }
+
+  try {
+    const { collections } = await sdk.store.collection.list(
+      { limit: 100 },
+      { next: { tags: ['collections'] } }
+    )
+
+    return {
+      ...emptyProductFilters,
+      collection: collections.map((collection) => ({
+        id: collection.id,
+        value: collection.title,
+      })),
+    }
+  } catch {
+    return emptyProductFilters
+  }
 }

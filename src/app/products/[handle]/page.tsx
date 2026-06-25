@@ -1,5 +1,4 @@
 import ProductPage, {
-  dynamic,
   generateMetadata as generateLocalizedMetadata,
 } from '../../[countryCode]/(main)/products/[handle]/page'
 
@@ -9,7 +8,7 @@ type Props = {
   params: Promise<{ handle: string }>
 }
 
-export { dynamic }
+export const dynamic = 'force-dynamic'
 
 function withDefaultRegion(params: Props['params']) {
   return params.then(({ handle }) => ({

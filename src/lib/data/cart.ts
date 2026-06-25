@@ -4,6 +4,7 @@ import { revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { sdk } from '@lib/config'
+import { isQuoteOnlyProduct } from '@lib/util/is-quote-only-product'
 import medusaError from '@lib/util/medusa-error'
 import { HttpTypes } from '@medusajs/types'
 import { omit } from 'lodash'
@@ -141,6 +142,13 @@ export async function addToCartCheapestVariant({
       return {
         success: false,
         error: 'Product not found',
+      }
+    }
+
+    if (isQuoteOnlyProduct(detailedProduct)) {
+      return {
+        success: false,
+        error: 'This product requires a quote',
       }
     }
 

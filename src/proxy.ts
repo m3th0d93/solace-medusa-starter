@@ -115,6 +115,16 @@ export async function proxy(request: NextRequest) {
   const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
   const firstPathSegment = pathSegments[0]?.toLowerCase() ?? ''
 
+  if (request.nextUrl.pathname === '/metal-access-panels-en') {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/categories/metal-access-panels'
+    return NextResponse.redirect(redirectUrl, 301)
+  }
+
+  if (request.nextUrl.pathname === '/macs') {
+    return new NextResponse('Gone', { status: 410 })
+  }
+
   if (STATIC_ROUTE_PREFIXES.has(firstPathSegment)) {
     return NextResponse.next()
   }

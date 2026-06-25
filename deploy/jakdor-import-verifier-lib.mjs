@@ -271,6 +271,62 @@ export function decideInnerPageResult(result) {
   return next
 }
 
+export function decideProductClickthroughResult(result) {
+  const next = {
+    ...result,
+    broken_images: [...(result.broken_images ?? [])],
+    broken_links: [...(result.broken_links ?? [])],
+    console_errors: [...(result.console_errors ?? [])],
+    missing_assets: [...(result.missing_assets ?? [])],
+    formatting_flags: [...(result.formatting_flags ?? [])],
+    evidence: result.evidence ?? {},
+  }
+
+  if (next.quote_only_expected) {
+    const addToCartText = normalizeText(next.evidence.add_to_cart_text)
+    const displayedPriceText = normalizeText(next.evidence.displayed_price_text)
+
+    if (!next.evidence.quote_only_ui_detected) {
+      next.formatting_flags.push('quote-only product UI marker missing')
+    }
+
+    if (next.evidence.add_to_cart_enabled) {
+      next.formatting_flags.push(
+        'quote-only product exposes enabled add-to-cart control'
+      )
+    }
+
+    if (/add to cart/i.test(addToCartText)) {
+      next.formatting_flags.push(
+        'quote-only product still labels checkout control as Add to cart'
+      )
+    }
+
+    if (/£\s*0(?:\.00)?\b|GBP\s*0(?:\.00)?\b|\b0\.00\b/i.test(displayedPriceText)) {
+      next.formatting_flags.push('quote-only product renders a zero price')
+    }
+  }
+
+  if (next.actual_status !== next.expected_status) {
+    next.decision = 'needs_import_fix'
+    return next
+  }
+
+  if (
+    next.broken_images.length > 0 ||
+    next.broken_links.length > 0 ||
+    next.console_errors.length > 0 ||
+    next.missing_assets.length > 0 ||
+    next.formatting_flags.length > 0
+  ) {
+    next.decision = 'needs_import_fix'
+    return next
+  }
+
+  next.decision = 'pass'
+  return next
+}
+
 export function decideMenuResult(result) {
   const expectedUrls = result.expectedCategories.map((category) => category.url)
   const desktopLinks = new Set(result.desktop_links ?? [])

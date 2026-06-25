@@ -7,6 +7,7 @@ import {
   decideCategoryResult,
   decideInnerPageResult,
   decideMenuResult,
+  decideProductClickthroughResult,
   detectFormattingFlags,
   isSafeVerificationBaseUrl,
   summarizeDecisions,
@@ -304,6 +305,48 @@ test('decideMenuResult preserves menu collection errors as import failures', () 
     ),
     true
   )
+})
+
+test('decideProductClickthroughResult blocks quote-only products with checkout affordances', () => {
+  const pass = decideProductClickthroughResult({
+    url: '/products/loft-hatch-with-ladder',
+    expected_status: 200,
+    actual_status: 200,
+    expected_title_or_h1: 'Loft Hatch With Ladder',
+    actual_title_or_h1: 'Loft Hatch With Ladder',
+    broken_images: [],
+    broken_links: [],
+    console_errors: [],
+    missing_assets: [],
+    formatting_flags: [],
+    quote_only_expected: true,
+    evidence: {
+      quote_only_ui_detected: true,
+      add_to_cart_enabled: false,
+      add_to_cart_text: '',
+      displayed_price_text: 'Price on request',
+    },
+  })
+
+  assert.equal(pass.decision, 'pass')
+
+  const blocked = decideProductClickthroughResult({
+    ...pass,
+    evidence: {
+      quote_only_ui_detected: false,
+      add_to_cart_enabled: true,
+      add_to_cart_text: 'Add to cart',
+      displayed_price_text: '£0.00',
+    },
+  })
+
+  assert.equal(blocked.decision, 'needs_import_fix')
+  assert.deepEqual(blocked.formatting_flags, [
+    'quote-only product UI marker missing',
+    'quote-only product exposes enabled add-to-cart control',
+    'quote-only product still labels checkout control as Add to cart',
+    'quote-only product renders a zero price',
+  ])
 })
 
 test('buildReadinessMarkdown produces a concise blocker summary', () => {

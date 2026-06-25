@@ -1,4 +1,5 @@
 import { getProductPrice } from '@lib/util/get-product-price'
+import { isQuoteOnlyProduct } from '@lib/util/is-quote-only-product'
 import { StoreProduct } from '@medusajs/types'
 import { Box } from '@modules/common/components/box'
 import { Button } from '@modules/common/components/button'
@@ -65,6 +66,7 @@ export function ProductCarousel({
                       calculatedPrice:
                         cheapestVariant.cheapestPrice.calculated_price,
                       salePrice: cheapestVariant.cheapestPrice.original_price,
+                      quoteOnly: isQuoteOnlyProduct(item),
                     }}
                     regionId={regionId}
                   />

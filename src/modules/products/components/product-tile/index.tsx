@@ -22,6 +22,7 @@ export function ProductTile({
     thumbnail: string
     calculatedPrice: string
     salePrice: string
+    quoteOnly?: boolean
   }
   regionId: string
 }) {
@@ -53,13 +54,18 @@ export function ProductTile({
             className="h-full w-full object-cover"
           />
         </LocalizedClientLink>
-        <ProductActions productHandle={product.handle} regionId={regionId} />
+        <ProductActions
+          productHandle={product.handle}
+          regionId={regionId}
+          quoteOnly={product.quoteOnly}
+        />
       </Box>
       <ProductInfo
         productHandle={product.handle}
         productTitle={product.title}
         calculatedPrice={product.calculatedPrice}
         salePrice={product.salePrice}
+        quoteOnly={product.quoteOnly}
       />
     </Box>
   )
@@ -70,11 +76,13 @@ function ProductInfo({
   productTitle,
   calculatedPrice,
   salePrice,
+  quoteOnly,
 }: {
   productHandle: string
   productTitle: string
   calculatedPrice: string
   salePrice: string
+  quoteOnly?: boolean
 }) {
   return (
     <Box className="flex flex-col gap-3 p-4 small:gap-6 small:p-5">
@@ -88,7 +96,11 @@ function ProductInfo({
             {productTitle}
           </Text>
         </LocalizedClientLink>
-        <ProductPrice calculatedPrice={calculatedPrice} salePrice={salePrice} />
+        <ProductPrice
+          calculatedPrice={calculatedPrice}
+          salePrice={salePrice}
+          quoteOnly={quoteOnly}
+        />
       </div>
     </Box>
   )

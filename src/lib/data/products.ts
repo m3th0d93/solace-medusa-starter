@@ -82,7 +82,7 @@ export const getProductsList = async function ({
         offset,
         region_id: region.id,
         fields:
-          '*variants.calculated_price,+variants.inventory_quantity,*variants,*variants.prices',
+          '*variants.calculated_price,+variants.inventory_quantity,*variants,*variants.prices,+metadata',
         ...queryParams,
       },
       { next: { tags: ['products'] } }
@@ -142,7 +142,7 @@ export const getProductsListByCollectionId = async function ({
         collection_id: [collectionId],
         region_id: region.id,
         fields:
-          '*variants.calculated_price,+variants.inventory_quantity,*variants,*variants.prices',
+          '*variants.calculated_price,+variants.inventory_quantity,*variants,*variants.prices,+metadata',
       },
       { next: { tags: ['products'] } }
     )

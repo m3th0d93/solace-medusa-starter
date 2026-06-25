@@ -1,5 +1,6 @@
 import { getRegion } from '@lib/data/regions'
 import { getProductPrice } from '@lib/util/get-product-price'
+import { isQuoteOnlyProduct } from '@lib/util/is-quote-only-product'
 import { ProductTile } from '@modules/products/components/product-tile'
 import { PRODUCT_LIMIT } from '@modules/search/actions'
 import { Pagination } from '@modules/store/components/pagination'
@@ -45,6 +46,7 @@ export default async function PaginatedProducts({
                   calculatedPrice:
                     cheapestVariant.cheapestPrice.calculated_price,
                   salePrice: p.sale_price,
+                  quoteOnly: isQuoteOnlyProduct(p),
                 }}
                 regionId={region.id}
               />

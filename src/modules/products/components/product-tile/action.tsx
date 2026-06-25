@@ -13,13 +13,19 @@ import { BagIcon, Spinner } from '@modules/common/icons'
 export function ProductActions({
   productHandle,
   regionId,
+  quoteOnly,
 }: {
   productHandle: string
   regionId: string
+  quoteOnly?: boolean
 }) {
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const { openCartDropdown } = useCartStore()
   const countryCode = useParams().countryCode as string
+
+  if (quoteOnly) {
+    return null
+  }
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true)

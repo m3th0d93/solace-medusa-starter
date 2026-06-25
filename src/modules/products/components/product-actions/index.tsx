@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 
 import { addToCart } from '@lib/data/cart'
 import { useCartStore } from '@lib/store/useCartStore'
+import { isQuoteOnlyProduct } from '@lib/util/is-quote-only-product'
 import { HttpTypes } from '@medusajs/types'
 import ItemQtySelect from '@modules/cart/components/item-qty-select'
 import { Box } from '@modules/common/components/box'
@@ -47,6 +48,7 @@ export default function ProductActions({
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
   const countryCode = useParams().countryCode as string
+  const isQuoteOnly = isQuoteOnlyProduct(product)
 
   // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {
@@ -159,56 +161,68 @@ export default function ProductActions({
       <div className="flex flex-col gap-y-6" ref={actionsRef}>
         <ProductPrice product={product} variant={selectedVariant} />
         <Divider />
-        <div>
-          {product.variants.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              {(product.options || []).map((option) => {
-                return (
-                  <div key={option.id}>
-                    <OptionSelect
-                      option={option}
-                      current={options[option.id]}
-                      updateOption={setOptionValue}
-                      variantsColors={colors}
-                      title={option.title ?? ''}
-                      data-testid="product-options"
-                      disabled={!!disabled || isAdding}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-        <Box className="flex items-center gap-x-3">
-          <Box className="min-w-[96px]">
-            <ItemQtySelect
-              qty={qty}
-              maxQuantity={maxQuantity}
-              action={setQty}
-            />
-          </Box>
-          <Button
-            onClick={handleAddToCart}
-            disabled={
-              !inStock ||
-              !selectedVariant ||
-              !!disabled ||
-              isAdding ||
-              maxQuantity === 0
-            }
-            className="w-full"
-            isLoading={isAdding}
-            data-testid="add-product-button"
+        {isQuoteOnly ? (
+          <Text
+            size="sm"
+            className="text-secondary"
+            data-testid="quote-only-product"
           >
-            {!selectedVariant
-              ? 'Select variant'
-              : !inStock
-                ? 'Out of stock'
-                : 'Add to cart'}
-          </Button>
-        </Box>
-        {maxQuantity === 0 && inStock && (
+            This product requires a quote.
+          </Text>
+        ) : (
+          <>
+            <div>
+              {product.variants.length > 0 && (
+                <div className="flex flex-col gap-y-4">
+                  {(product.options || []).map((option) => {
+                    return (
+                      <div key={option.id}>
+                        <OptionSelect
+                          option={option}
+                          current={options[option.id]}
+                          updateOption={setOptionValue}
+                          variantsColors={colors}
+                          title={option.title ?? ''}
+                          data-testid="product-options"
+                          disabled={!!disabled || isAdding}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <Box className="flex items-center gap-x-3">
+              <Box className="min-w-[96px]">
+                <ItemQtySelect
+                  qty={qty}
+                  maxQuantity={maxQuantity}
+                  action={setQty}
+                />
+              </Box>
+              <Button
+                onClick={handleAddToCart}
+                disabled={
+                  !inStock ||
+                  !selectedVariant ||
+                  !!disabled ||
+                  isAdding ||
+                  maxQuantity === 0
+                }
+                className="w-full"
+                isLoading={isAdding}
+                data-testid="add-product-button"
+              >
+                {!selectedVariant
+                  ? 'Select variant'
+                  : !inStock
+                    ? 'Out of stock'
+                    : 'Add to cart'}
+              </Button>
+            </Box>
+          </>
+        )}
+        {maxQuantity === 0 && inStock && !isQuoteOnly && (
           <Text size="sm" className="text-negative">
             You cannot add more items to your cart - you already have the
             maximum number in cart.

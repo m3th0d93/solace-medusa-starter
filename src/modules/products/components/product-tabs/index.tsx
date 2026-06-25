@@ -34,7 +34,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   const tabs = [
     {
       label: 'Description',
-      component: <ProductDescriptionTab description={product.description} />,
+      component: <ProductDescriptionTab product={product} />,
     },
     Object.entries(dimensions).length > 0 && {
       label: 'Dimensions',
@@ -92,7 +92,26 @@ export default function ProductTabs({ product }: ProductTabsProps) {
   )
 }
 
-const ProductDescriptionTab = ({ description }: { description: string }) => {
+const ProductDescriptionTab = ({
+  product,
+}: {
+  product: HttpTypes.StoreProduct
+}) => {
+  const description = product.description ?? ''
+  const isImportedOpenCartHtml =
+    product.metadata?.source_platform === 'opencart' &&
+    /<\/?[a-z][\s\S]*>/i.test(description)
+
+  if (isImportedOpenCartHtml) {
+    return (
+      <div
+        data-testid="product-description-tab"
+        className="text-md text-secondary"
+        dangerouslySetInnerHTML={{ __html: description }}
+      />
+    )
+  }
+
   return (
     <Text
       data-testid="product-description-tab"

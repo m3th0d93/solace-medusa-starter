@@ -73,7 +73,7 @@ export const FAQAccordion = ({
               </AccordionTrigger>
               <AccordionContent>
                 <Text size="lg" className="max-w-[664px] text-secondary">
-                  {item.Text}
+                  <LinkedQuestionText text={item.Text} />
                 </Text>
               </AccordionContent>
             </AccordionItem>
@@ -81,5 +81,25 @@ export const FAQAccordion = ({
         })}
       </Accordion>
     </Box>
+  )
+}
+
+const LinkedQuestionText = ({ text }: { text: string }) => {
+  const parts = String(text).split(/((?:https?:\/\/|\/)[^\s]+)/g)
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (/^(?:https?:\/\/|\/)/.test(part)) {
+          return (
+            <a key={index} href={part} className="underline">
+              {part}
+            </a>
+          )
+        }
+
+        return part
+      })}
+    </>
   )
 }

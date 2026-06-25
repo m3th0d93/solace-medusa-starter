@@ -10,6 +10,7 @@ import {
   decideCategoryResult,
   decideInnerPageResult,
   decideMenuResult,
+  decideProductClickthroughResult,
   detectFormattingFlags,
   isSafeVerificationBaseUrl,
 } from './jakdor-import-verifier-lib.mjs'
@@ -32,12 +33,28 @@ const defaultRawSnapshot = path.join(
   '20260625T074941Z',
   'opencart-raw.json'
 )
+const defaultGoldenCorpus = path.join(
+  jakdorRoot,
+  'migration',
+  'opencart',
+  'import',
+  'golden-corpus.json'
+)
+const defaultResolutions = path.join(
+  jakdorRoot,
+  'migration',
+  'opencart',
+  'import',
+  'golden-poc-resolutions.json'
+)
 
 function parseArgs(argv) {
   const args = {
     baseUrl: process.env.PUBLIC_BASE_URL ?? 'https://staging.jakdor.co.uk',
     normalizedDir: defaultNormalizedDir,
     rawSnapshot: defaultRawSnapshot,
+    goldenCorpus: defaultGoldenCorpus,
+    resolutions: defaultResolutions,
     reportDir: null,
     screenshots: true,
   }
@@ -47,6 +64,8 @@ function parseArgs(argv) {
     if (arg === '--base-url') args.baseUrl = argv[++index]
     else if (arg === '--normalized-dir') args.normalizedDir = path.resolve(argv[++index])
     else if (arg === '--raw-snapshot') args.rawSnapshot = path.resolve(argv[++index])
+    else if (arg === '--golden-corpus') args.goldenCorpus = path.resolve(argv[++index])
+    else if (arg === '--resolutions') args.resolutions = path.resolve(argv[++index])
     else if (arg === '--report-dir') args.reportDir = path.resolve(argv[++index])
     else if (arg === '--no-screenshots') args.screenshots = false
     else if (arg === '--help') {
@@ -79,6 +98,8 @@ Options:
   --base-url <url>          Staging, throwaway, localhost, or 127.0.0.1 target
   --normalized-dir <path>   Normalized snapshot folder
   --raw-snapshot <path>     Raw OpenCart snapshot JSON
+  --golden-corpus <path>    Optional frozen corpus for explicit product checks
+  --resolutions <path>      Optional blocker/media resolution manifest
   --report-dir <path>       Output folder for JSON, Markdown, and screenshots
   --no-screenshots          Skip PNG screenshot output
 `)
@@ -122,6 +143,66 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/gi, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase()
+}
+
+function resolvedMediaRefs(resolutions) {
+  return new Set(
+    (resolutions?.media ?? [])
+      .filter((item) => item.status === 'resolved' && item.asset_ref)
+      .map((item) => String(item.asset_ref))
+  )
+}
+
+function resolvedDispositions(resolutions) {
+  const resolved = new Set()
+
+  for (const section of ['media', 'products', 'redirects']) {
+    for (const item of resolutions?.[section] ?? []) {
+      if (item.status === 'resolved' && item.resolves_disposition) {
+        resolved.add(String(item.resolves_disposition))
+      }
+    }
+  }
+
+  if (
+    resolutions?.attributes?.status === 'resolved' &&
+    resolutions.attributes.resolves_disposition
+  ) {
+    resolved.add(String(resolutions.attributes.resolves_disposition))
+  }
+
+  return resolved
+}
+
+function productDescriptionsById(rawSnapshot) {
+  return new Map(
+    (rawSnapshot.tables?.product_description ?? [])
+      .filter((row) => String(row.language_id ?? '1') === '1')
+      .map((row) => [String(row.product_id), row])
+  )
+}
+
+function buildGoldenProductChecks(rawSnapshot, routeReport, goldenCorpus) {
+  const descriptions = productDescriptionsById(rawSnapshot)
+  const routes = routeReport.products ?? {}
+
+  return (goldenCorpus?.products ?? [])
+    .map((item) => {
+      const productId = String(item.opencart_product_id)
+      const url = item.expected_path ?? routes[productId]
+
+      if (!url) return null
+
+      return {
+        url,
+        opencart_product_id: productId,
+        expected_h1: descriptions.get(productId)?.name ?? 'product page',
+        quote_only_expected:
+          item.role === 'zero_price_quote_only' ||
+          (item.must_verify ?? []).includes('quote_only'),
+      }
+    })
+    .filter(Boolean)
 }
 
 async function launchBrowser() {
@@ -433,8 +514,61 @@ async function checkMenu(browser, baseUrl, expectedCategories, screenshotsDir, s
   })
 }
 
-async function checkProductClickthrough(browser, baseUrl, categoryRows) {
+async function checkProductPage(browser, baseUrl, productPath, options = {}) {
+  const { page, consoleErrors } = await newCheckedPage(browser, {
+    width: 1440,
+    height: 1000,
+  })
+
+  try {
+    const navigation = await gotoForReport(page, absoluteUrl(baseUrl, productPath))
+    const h1 = await page.locator('h1').first().innerText({ timeout: 5000 }).catch(() => '')
+    const brokenImages = await collectBrokenImages(page, baseUrl).catch(() => [])
+    const formattingFlags = detectFormattingFlags(await page.content().catch(() => ''))
+    if (navigation.navigationError) {
+      formattingFlags.push(`navigation failed: ${navigation.navigationError}`)
+    }
+    const evidence = await page.evaluate(() => {
+      const addButton = document.querySelector('[data-testid="add-product-button"]')
+      const price = document.querySelector('[data-testid="product-price"]')
+      const body = document.body.textContent ?? ''
+
+      return {
+        quote_only_ui_detected:
+          document.querySelector('[data-testid="quote-only-product"]') !== null ||
+          /price on request|requires a quote|request a quote/i.test(body),
+        add_to_cart_enabled: addButton ? !addButton.disabled : false,
+        add_to_cart_text: addButton?.textContent ?? '',
+        displayed_price_text: price?.textContent ?? '',
+      }
+    }).catch(() => ({}))
+
+    return decideProductClickthroughResult({
+      url: productPath,
+      source_category_url: options.sourceCategoryUrl,
+      opencart_product_id: options.opencartProductId,
+      expected_status: 200,
+      actual_status: navigation.status,
+      expected_title_or_h1: options.expectedH1 ?? 'product page',
+      actual_title_or_h1: h1,
+      expected_product_count: null,
+      actual_product_count: null,
+      broken_images: brokenImages,
+      broken_links: [],
+      console_errors: consoleErrors,
+      missing_assets: [],
+      formatting_flags: formattingFlags,
+      quote_only_expected: Boolean(options.quoteOnlyExpected),
+      evidence,
+    })
+  } finally {
+    await page.close()
+  }
+}
+
+async function checkProductClickthrough(browser, baseUrl, categoryRows, productChecks = []) {
   const rows = []
+  const checkedPaths = new Set()
 
   for (const categoryRow of categoryRows) {
     const firstProduct = categoryRow.product_links?.[0] ?? null
@@ -457,55 +591,40 @@ async function checkProductClickthrough(browser, baseUrl, categoryRows) {
       continue
     }
 
-    const { page, consoleErrors } = await newCheckedPage(browser, {
-      width: 1440,
-      height: 1000,
-    })
-    try {
-      const navigation = await gotoForReport(page, absoluteUrl(baseUrl, firstProduct))
-      const h1 = await page.locator('h1').first().innerText({ timeout: 5000 }).catch(() => '')
-      const brokenImages = await collectBrokenImages(page, baseUrl).catch(() => [])
-      const formattingFlags = detectFormattingFlags(await page.content().catch(() => ''))
-      if (navigation.navigationError) {
-        formattingFlags.push(`navigation failed: ${navigation.navigationError}`)
-      }
-      rows.push({
-        url: firstProduct,
-        source_category_url: categoryRow.url,
-        expected_status: 200,
-        actual_status: navigation.status,
-        expected_title_or_h1: 'product page',
-        actual_title_or_h1: h1,
-        expected_product_count: null,
-        actual_product_count: null,
-        broken_images: brokenImages,
-        broken_links: [],
-        console_errors: consoleErrors,
-        missing_assets: [],
-        formatting_flags: formattingFlags,
-        decision:
-          navigation.status === 200 &&
-          brokenImages.length === 0 &&
-          consoleErrors.length === 0 &&
-          formattingFlags.length === 0
-            ? 'pass'
-            : 'needs_import_fix',
+    checkedPaths.add(firstProduct)
+    rows.push(
+      await checkProductPage(browser, baseUrl, firstProduct, {
+        sourceCategoryUrl: categoryRow.url,
       })
-    } finally {
-      await page.close()
-    }
+    )
+  }
+
+  for (const productCheck of productChecks) {
+    if (checkedPaths.has(productCheck.url)) continue
+
+    checkedPaths.add(productCheck.url)
+    rows.push(
+      await checkProductPage(browser, baseUrl, productCheck.url, {
+        opencartProductId: productCheck.opencart_product_id,
+        expectedH1: productCheck.expected_h1,
+        quoteOnlyExpected: productCheck.quote_only_expected,
+      })
+    )
   }
 
   return rows
 }
 
-function buildAssetFormattingRows(mediaReport, summaryReport, rawSnapshot) {
+function buildAssetFormattingRows(mediaReport, summaryReport, rawSnapshot, resolutions) {
   const rows = []
+  const resolvedRefs = resolvedMediaRefs(resolutions)
+  const resolved = resolvedDispositions(resolutions)
   const mediaProblems = (mediaReport.rows ?? []).filter(
     (row) =>
-      row.validation_status !== 'pass' ||
-      row.cross_domain ||
-      row.decision === 'block'
+      !resolvedRefs.has(String(row.ref)) &&
+      (row.validation_status !== 'pass' ||
+        row.cross_domain ||
+        row.decision === 'block')
   )
 
   for (const problem of mediaProblems) {
@@ -536,7 +655,7 @@ function buildAssetFormattingRows(mediaReport, summaryReport, rawSnapshot) {
   const zeroPriceProduct = (rawSnapshot.tables?.product ?? []).find(
     (row) => String(row.product_id) === '80' && Number(row.price) === 0
   )
-  if (zeroPriceProduct) {
+  if (zeroPriceProduct && !resolved.has('quote_only_no_purchase')) {
     rows.push({
       url: 'product:80',
       expected_status: 200,
@@ -556,6 +675,8 @@ function buildAssetFormattingRows(mediaReport, summaryReport, rawSnapshot) {
 
   const hardStopFlags = summaryReport.hard_stop_flags ?? []
   for (const flag of hardStopFlags.filter((item) => item.includes('demo attribute'))) {
+    if (resolved.has('drop_demo_attributes')) continue
+
     rows.push({
       url: 'attributes',
       expected_status: 200,
@@ -627,16 +748,24 @@ async function main() {
     path.join(args.normalizedDir, 'category-reconciliation.json')
   )
   const rawSnapshot = await readJson(args.rawSnapshot)
+  const goldenCorpus = await readOptionalJson(args.goldenCorpus)
+  const resolutions = await readOptionalJson(args.resolutions)
   const baseline = buildBaseline(rawSnapshot, routeReport, categoryReconciliation)
+  const goldenProductChecks = buildGoldenProductChecks(
+    rawSnapshot,
+    routeReport,
+    goldenCorpus
+  )
   const screenshotsDir = path.join(args.reportDir, 'screenshots')
 
   await fs.mkdir(args.reportDir, { recursive: true })
 
   const mediaProblems = (mediaReport.rows ?? []).filter(
     (row) =>
-      row.validation_status !== 'pass' ||
-      row.cross_domain ||
-      row.decision === 'block'
+      !resolvedMediaRefs(resolutions).has(String(row.ref)) &&
+      (row.validation_status !== 'pass' ||
+        row.cross_domain ||
+        row.decision === 'block')
   )
 
   const browser = await launchBrowser()
@@ -673,12 +802,14 @@ async function main() {
     const productClickthroughRows = await checkProductClickthrough(
       browser,
       args.baseUrl,
-      categoryRows
+      categoryRows,
+      goldenProductChecks
     )
     const assetFormattingRows = buildAssetFormattingRows(
       mediaReport,
       summaryReport,
-      rawSnapshot
+      rawSnapshot,
+      resolutions
     )
     const redirectRows = buildRedirectReadinessRows(routeReport, rawSnapshot)
 

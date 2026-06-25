@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { getProductPrice } from '@lib/util/get-product-price'
+import { isQuoteOnlyProduct } from '@lib/util/is-quote-only-product'
 import { HttpTypes } from '@medusajs/types'
 
 export default function ProductPrice({
@@ -10,6 +11,20 @@ export default function ProductPrice({
   product: HttpTypes.StoreProduct
   variant?: HttpTypes.StoreProductVariant
 }) {
+  if (isQuoteOnlyProduct(product)) {
+    return (
+      <div className="flex items-center gap-x-2">
+        <span
+          className="text-2xl text-basic-primary"
+          data-testid="product-price"
+          data-value="quote-only"
+        >
+          Price on request
+        </span>
+      </div>
+    )
+  }
+
   const { cheapestPrice, variantPrice } = getProductPrice({
     product,
     variantId: variant?.id,

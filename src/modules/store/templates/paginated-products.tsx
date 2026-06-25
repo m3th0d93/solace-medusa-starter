@@ -31,9 +31,11 @@ export default async function PaginatedProducts({
         data-testid="products-list"
       >
         {products.map((p) => {
+          const quoteOnly = isQuoteOnlyProduct(p)
           const cheapestVariant = getProductPrice({
             product: p,
           })
+
           return (
             <li key={p.id}>
               <ProductTile
@@ -44,9 +46,9 @@ export default async function PaginatedProducts({
                   handle: p.handle,
                   thumbnail: p.thumbnail,
                   calculatedPrice:
-                    cheapestVariant.cheapestPrice.calculated_price,
+                    cheapestVariant.cheapestPrice?.calculated_price ?? '',
                   salePrice: p.sale_price,
-                  quoteOnly: isQuoteOnlyProduct(p),
+                  quoteOnly,
                 }}
                 regionId={region.id}
               />

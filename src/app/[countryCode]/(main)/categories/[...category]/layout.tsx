@@ -14,6 +14,8 @@ interface CategoryPageLayoutProps {
   params: Promise<{ category: string[] }>
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function generateStaticParams() {
   const product_categories = await listCategories()
 

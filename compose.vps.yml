@@ -26,6 +26,7 @@ services:
     working_dir: /app
     volumes:
       - ./deploy/cms-stub.mjs:/app/cms-stub.mjs:ro
+      - ./deploy/jakdor-golden-content.mjs:/app/jakdor-golden-content.mjs:ro
     command: node /app/cms-stub.mjs
     expose:
       - "1337"

@@ -42,7 +42,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
         onClick={() => onOpenChange(false)}
         asChild
       >
-        <LocalizedClientLink href={`${activeItem?.handle ?? '/'}`}>
+        <LocalizedClientLink href={activeItem?.handle ?? item.handle}>
           Shop all{' '}
           {activeItem?.name === 'Shop' || activeItem?.name === 'Collections'
             ? ''

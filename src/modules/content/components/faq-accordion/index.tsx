@@ -71,7 +71,7 @@ export const FAQAccordion = ({
                   <MinusThinIcon />
                 </div>
               </AccordionTrigger>
-              <AccordionContent>
+              <AccordionContent forceMount>
                 <Text size="lg" className="max-w-[664px] text-secondary">
                   <LinkedQuestionText text={item.Text} />
                 </Text>

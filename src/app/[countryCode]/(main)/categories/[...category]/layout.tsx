@@ -48,14 +48,17 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const params = await props.params
   const { product_categories } = await getCategoryByHandle(params.category)
+  const currentCategory = product_categories[product_categories.length - 1]
+
+  if (!currentCategory) {
+    notFound()
+  }
 
   const title = product_categories
     .map((category: StoreProductCategory) => category.name)
     .join(' | ')
 
-  const description =
-    product_categories[product_categories.length - 1].description ??
-    `${title} category.`
+  const description = currentCategory.description ?? `${title} category.`
 
   return {
     title: `${title} | Solace Medusa Starter`,
@@ -77,6 +80,10 @@ export default async function CategoryPageLayout(
 
   const { product_categories } = await getCategoryByHandle(category)
   const currentCategory = product_categories[product_categories.length - 1]
+
+  if (!currentCategory) {
+    notFound()
+  }
 
   return (
     <>

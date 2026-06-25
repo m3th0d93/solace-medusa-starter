@@ -57,6 +57,7 @@ function parseArgs(argv) {
     resolutions: defaultResolutions,
     reportDir: null,
     screenshots: true,
+    corpusOnly: false,
   }
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -68,6 +69,7 @@ function parseArgs(argv) {
     else if (arg === '--resolutions') args.resolutions = path.resolve(argv[++index])
     else if (arg === '--report-dir') args.reportDir = path.resolve(argv[++index])
     else if (arg === '--no-screenshots') args.screenshots = false
+    else if (arg === '--corpus-only') args.corpusOnly = true
     else if (arg === '--help') {
       printHelp()
       process.exit(0)
@@ -102,6 +104,7 @@ Options:
   --resolutions <path>      Optional blocker/media resolution manifest
   --report-dir <path>       Output folder for JSON, Markdown, and screenshots
   --no-screenshots          Skip PNG screenshot output
+  --corpus-only             Verify only the frozen golden corpus rows
 `)
 }
 
@@ -203,6 +206,37 @@ function buildGoldenProductChecks(rawSnapshot, routeReport, goldenCorpus) {
       }
     })
     .filter(Boolean)
+}
+
+function buildCorpusBaseline(baseline, goldenCorpus) {
+  const categoryIds = new Set(
+    (goldenCorpus?.categories ?? []).map((item) =>
+      String(item.opencart_category_id)
+    )
+  )
+  const informationIds = new Set(
+    (goldenCorpus?.information_pages ?? []).map((item) =>
+      String(item.opencart_information_id)
+    )
+  )
+  const corpusProductIds = (goldenCorpus?.products ?? []).map((item) =>
+    Number(item.opencart_product_id)
+  )
+
+  return {
+    ...baseline,
+    categories: baseline.categories
+      .filter((category) => categoryIds.has(String(category.category_id)))
+      .map((category) => ({
+        ...category,
+        expected_product_count: corpusProductIds.length,
+        corpus_expected_product_ids: corpusProductIds,
+        corpus_source_public_visible_count: category.source_public_visible_count,
+      })),
+    innerPages: baseline.innerPages.filter((page) =>
+      informationIds.has(String(page.information_id))
+    ),
+  }
 }
 
 async function launchBrowser() {
@@ -728,6 +762,58 @@ function buildRedirectReadinessRows(routeReport, rawSnapshot) {
   ]
 }
 
+async function buildCorpusRedirectRows(baseUrl, goldenCorpus) {
+  const rows = []
+
+  for (const redirect of goldenCorpus?.redirects ?? []) {
+    const legacyPath = redirect.legacy_path
+    const response = await fetch(absoluteUrl(baseUrl, legacyPath), {
+      redirect: 'manual',
+    }).catch(() => null)
+    const actualStatus = response?.status ?? null
+    const actualLocation = response?.headers?.get('location') ?? null
+    const expectsGone = redirect.expected_target === '410_gone'
+    const expectedStatus = expectsGone ? 410 : 301
+    const flags = []
+
+    if (actualStatus !== expectedStatus) {
+      flags.push(`expected HTTP ${expectedStatus}, got ${actualStatus ?? 'no response'}`)
+    }
+
+    if (!expectsGone) {
+      const actualPath = actualLocation
+        ? publicPathFromHref(baseUrl, actualLocation)
+        : null
+
+      if (actualPath !== redirect.expected_target) {
+        flags.push(
+          `expected location ${redirect.expected_target}, got ${actualPath ?? 'none'}`
+        )
+      }
+    }
+
+    rows.push({
+      url: legacyPath,
+      expected_status: expectedStatus,
+      actual_status: actualStatus,
+      expected_title_or_h1: expectsGone
+        ? '410 Gone'
+        : redirect.expected_target,
+      actual_title_or_h1: actualLocation ?? '',
+      expected_product_count: null,
+      actual_product_count: null,
+      broken_images: [],
+      broken_links: [],
+      console_errors: [],
+      missing_assets: [],
+      formatting_flags: flags,
+      decision: flags.length ? 'needs_redirect_decision' : 'pass',
+    })
+  }
+
+  return rows
+}
+
 async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
@@ -751,6 +837,9 @@ async function main() {
   const goldenCorpus = await readOptionalJson(args.goldenCorpus)
   const resolutions = await readOptionalJson(args.resolutions)
   const baseline = buildBaseline(rawSnapshot, routeReport, categoryReconciliation)
+  const verificationBaseline = args.corpusOnly
+    ? buildCorpusBaseline(baseline, goldenCorpus)
+    : baseline
   const goldenProductChecks = buildGoldenProductChecks(
     rawSnapshot,
     routeReport,
@@ -771,7 +860,7 @@ async function main() {
   const browser = await launchBrowser()
   try {
     const categoryRows = []
-    for (const category of baseline.categories) {
+    for (const category of verificationBaseline.categories) {
       categoryRows.push(
         await checkCategory(
           browser,
@@ -785,17 +874,17 @@ async function main() {
     }
 
     const menuRows = [
-      await checkMenu(
+        await checkMenu(
         browser,
         args.baseUrl,
-        baseline.categories,
+        verificationBaseline.categories,
         screenshotsDir,
         args.screenshots
       ),
     ]
 
     const innerPageRows = []
-    for (const innerPage of baseline.innerPages) {
+    for (const innerPage of verificationBaseline.innerPages) {
       innerPageRows.push(await checkInnerPage(browser, args.baseUrl, innerPage))
     }
 
@@ -811,7 +900,9 @@ async function main() {
       rawSnapshot,
       resolutions
     )
-    const redirectRows = buildRedirectReadinessRows(routeReport, rawSnapshot)
+    const redirectRows = args.corpusOnly
+      ? await buildCorpusRedirectRows(args.baseUrl, goldenCorpus)
+      : buildRedirectReadinessRows(routeReport, rawSnapshot)
 
     await writeJson(path.join(args.reportDir, 'category-page-check-report.json'), categoryRows)
     await writeJson(path.join(args.reportDir, 'menu-check-report.json'), menuRows)

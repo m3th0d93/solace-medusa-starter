@@ -27,6 +27,7 @@ const PUBLIC_ROUTE_PREFIXES = new Set([
 ])
 
 const STATIC_ROUTE_PREFIXES = new Set(['fonts'])
+const TOP_LEVEL_COMMERCE_PREFIXES = new Set(['categories', 'products'])
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
@@ -126,6 +127,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (STATIC_ROUTE_PREFIXES.has(firstPathSegment)) {
+    return NextResponse.next()
+  }
+
+  if (TOP_LEVEL_COMMERCE_PREFIXES.has(firstPathSegment)) {
     return NextResponse.next()
   }
 
